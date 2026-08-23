@@ -172,6 +172,7 @@
           <div class="meter-bar"><div class="meter-fill" id="fill"></div></div>
           <div class="meter-label"><span>Risk level</span><span id="pct">—</span></div>
         </div>
+        <div id="ansbox" style="display:none;margin:14px 0;padding:16px;border-radius:10px;background:#F0F6FF;border-left:5px solid #2563EB;font-size:1rem;line-height:1.65"><strong style="display:block;margin-bottom:6px">The answer</strong><span id="anstext"></span></div>
         <h2 class="reason">Why</h2>
         <ul class="flags" id="flags"></ul>
         <div class="advice" id="advice"></div>
@@ -202,12 +203,27 @@ btn.addEventListener("click", async () => {
 
   if(!AIEngine.isConfigured()){ AIEngine.settingsUI(); return; }
   try{
-    let data = await AIEngine.chat(`You are Scam Shield, a fraud-detection engine. Analyze the user's pasted message for scams, phishing, fraud, or social engineering.
+    let data = await AIEngine.chat(`You are Scam Shield — part fraud detector, part truth-answerer. The user pastes a suspicious message OR asks a question (like "is X real?").
+
+First decide the INTENT:
+- QUESTION mode: user is asking whether something/someone is legitimate or what it is.
+- CHECK mode: user pasted a message they received and want analyzed.
+
 Reply ONLY with minified JSON matching exactly:
-{"verdict":"scam|suspicious|safe","risk":<int 0-100>,"reason":"one plain sentence","flags":[{"type":"scam|suspicious|safe","text":"short flag description"}],"advice":"one concrete next step"}
-Rules: verdict 'scam' only for clear fraud patterns; 'suspicious' for mixed signals; risk is 0 (definitely safe) to 100 (definite scam). Flags: 2-5 short items citing specifics from the message (links, urgency, payment asks). Plain language a non-expert understands.`, text, {max_tokens:600});
+{"mode":"question|check","verdict":"scam|suspicious|safe|unknown","risk":<int 0-100>,"reason":"one plain sentence","answer":"if QUESTION mode: 2-4 plain sentences answering what it actually is, whether it is real or legit, and the known scam angle around it. If CHECK mode: empty string","flags":[{"type":"scam|suspicious|safe","text":"short flag"}],"advice":"one concrete next step"}
+
+Rules:
+- QUESTION mode: answer factually from general knowledge. Name what the thing is, if it is real, and how scammers typically abuse its name (fake tokens, impersonation scams etc). verdict reflects how risky this thing is for an average user; use "unknown" if you truly cannot assess.
+- CHECK mode: analyze the pasted text as before, answer must be empty string.
+- Never invent facts. If unsure about legitimacy, say so in answer and set verdict accordingly.
+- Plain language, no jargon.`, text, {max_tokens:600});
 
     // Render
+    const ansbox = $("ansbox");
+    if(data.mode==="question" && data.answer){
+      ansbox.style.display="block";
+      $("anstext").textContent = data.answer;
+    } else { ansbox.style.display="none"; }
     $("result").style.display = "block";
     status.textContent = "";
     const v = (data.verdict||"suspicious").toLowerCase();
