@@ -173,6 +173,10 @@
           <div class="meter-label"><span>Risk level</span><span id="pct">—</span></div>
         </div>
         <div id="ansbox" style="display:none;margin:14px 0;padding:16px;border-radius:10px;background:#F0F6FF;border-left:5px solid #2563EB;font-size:1rem;line-height:1.65"><strong style="display:block;margin-bottom:6px">The answer</strong><span id="anstext"></span></div>
+        <div id="srcbox" style="display:none;margin:14px 0;padding:16px;border-radius:10px;background:#FAFAFA;border:1px solid #E4E7EC;font-size:.9rem;line-height:1.7">
+          <strong style="display:block;margin-bottom:6px">Sources</strong>
+          <ol id="srclist" style="margin-left:18px"></ol>
+        </div>
         <h2 class="reason">Why</h2>
         <ul class="flags" id="flags"></ul>
         <div class="advice" id="advice"></div>
@@ -216,14 +220,23 @@ Rules:
 - QUESTION mode: answer factually from general knowledge. Name what the thing is, if it is real, and how scammers typically abuse its name (fake tokens, impersonation scams etc). verdict reflects how risky this thing is for an average user; use "unknown" if you truly cannot assess.
 - CHECK mode: analyze the pasted text as before, answer must be empty string.
 - Never invent facts. If unsure about legitimacy, say so in answer and set verdict accordingly.
-- Plain language, no jargon.`, text, {max_tokens:600});
+- Plain language, no jargon.
+- A WEB SEARCH may be attached below the instructions in your system message. When present, treat it as CURRENT GROUND TRUTH about the world (release dates, latest versions, current facts). Your internal knowledge may be outdated — always prefer the search results when they conflict with what you remember. Cite them inline as [1] [2].`, text, {max_tokens:600});
 
     // Render
     const ansbox = $("ansbox");
+    const srcbox = $("srcbox");
     if(data.mode==="question" && data.answer){
       ansbox.style.display="block";
       $("anstext").textContent = data.answer;
     } else { ansbox.style.display="none"; }
+    if(Array.isArray(data._sources) && data._sources.length){
+      srcbox.style.display="block";
+      $("srclist").innerHTML = data._sources.map(s=>{
+        const u=(s.url||"#"), t=(s.title||u);
+        return `<li><a href="${u}" target="_blank" rel="noopener">${t}</a></li>`;
+      }).join("");
+    } else { srcbox.style.display="none"; }
     $("result").style.display = "block";
     status.textContent = "";
     const v = (data.verdict||"suspicious").toLowerCase();
