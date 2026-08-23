@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scam Shield — instant scam verdicts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#101828; --paper:#FCFCFD; --line:#E4E7EC;
+    --danger:#D92D20; --safe:#067647; --warn:#B54708;
+    --muted:#475467;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    line-height:1.6; min-height:100vh;
+  }
+  .wrap{max-width:720px;margin:0 auto;padding:48px 20px}
+  header{margin-bottom:40px}
+  .brand{
+    font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:1.5rem;
+    letter-spacing:-0.02em;display:flex;align-items:center;gap:10px;
+  }
+  .brand .shield{
+    width:34px;height:38px;background:var(--ink);color:var(--paper);
+    display:inline-flex;align-items:center;justify-content:center;
+    clip-path:polygon(50% 0,100% 18%,100% 60%,50% 100%,0 60%,0 18%);
+    font-size:1rem;
+  }
+  h1{
+    font-family:"Space Grotesk",sans-serif;font-weight:700;
+    font-size:clamp(1.9rem,5vw,2.8rem);letter-spacing:-0.03em;
+    line-height:1.1;margin-top:28px;
+  }
+  h1 em{font-style:normal;color:var(--muted)}
+  .sub{color:var(--muted);margin-top:10px;font-size:1.05rem}
+
+  label{
+    display:block;font-weight:600;font-size:.85rem;text-transform:uppercase;
+    letter-spacing:.08em;color:var(--muted);margin-bottom:10px;
+  }
+  textarea{
+    width:100%;min-height:170px;padding:18px;border:1.5px solid var(--ink);
+    border-radius:12px;background:#fff;font-size:1.05rem;line-height:1.55;
+    resize:vertical;color:var(--ink);
+  }
+  textarea:focus{outline:3px solid var(--ink);outline-offset:2px}
+  textarea::placeholder{color:#98A2B3}
+
+  .row{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap}
+  button.analyze{
+    flex:1;min-width:200px;padding:16px 24px;border:none;border-radius:12px;
+    background:var(--ink);color:var(--paper);font-size:1.05rem;font-weight:700;
+    cursor:pointer;font-family:inherit;
+    box-shadow:0 4px 14px rgba(16,24,40,.25);
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  button.analyze:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 7px 18px rgba(16,24,40,.3)}
+  button.analyze:disabled{opacity:.55;cursor:wait}
+  button.clear{
+    padding:16px 22px;border:1.5px solid var(--ink);border-radius:12px;
+    background:transparent;color:var(--ink);font-weight:600;font-size:1rem;
+    cursor:pointer;font-family:inherit;
+  }
+
+  .status{margin-top:14px;color:var(--muted);font-size:.95rem;min-height:1.4em}
+
+  /* Result card */
+  #result{display:none;margin-top:36px;position:relative}
+  .card{
+    border:1.5px solid var(--ink);border-radius:16px;background:#fff;
+    padding:56px 28px 28px;position:relative;overflow:hidden;
+    animation:rise .35s ease;
+  }
+  @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+  .stamp{
+    position:absolute;top:18px;right:20px;
+    font-family:"Space Grotesk",sans-serif;font-weight:700;
+    font-size:clamp(1.6rem,5vw,2.4rem);letter-spacing:.06em;
+    text-transform:uppercase;padding:8px 22px;
+    border:4px solid currentColor;border-radius:8px;
+    transform:rotate(-8deg);
+    animation:slam .45s cubic-bezier(.2,1.6,.4,1) both;
+    mix-blend-mode:multiply;
+  }
+  .stamp.scam{color:var(--danger)}
+  .stamp.safe{color:var(--safe)}
+  .stamp.suspicious{color:var(--warn)}
+  @keyframes slam{
+    0%{opacity:0;transform:rotate(-8deg) scale(2.6)}
+    70%{opacity:1;transform:rotate(-8deg) scale(.92)}
+    100%{transform:rotate(-8deg) scale(1)}
+  }
+
+  .meter{margin:6px 0 20px}
+  .meter-bar{height:10px;border-radius:6px;background:var(--line);overflow:hidden}
+  .meter-fill{height:100%;border-radius:6px;transition:width .8s ease;width:0}
+  .meter-label{font-size:.85rem;color:var(--muted);margin-top:6px;display:flex;justify-content:space-between}
+  meter-fill.scam,.meter-fill.scam{background:var(--danger)}
+  .meter-fill.safe{background:var(--safe)}
+  .meter-fill.suspicious{background:var(--warn)}
+
+  h2.reason{
+    font-family:"Space Grotesk",sans-serif;font-size:1.15rem;font-weight:700;
+    margin-bottom:8px;letter-spacing:-0.01em;
+  }
+  ul.flags{list-style:none;margin:8px 0 0}
+  ul.flags li{
+    padding:10px 0 10px 30px;position:relative;border-top:1px dashed var(--line);
+    font-size:.98rem;
+  }
+  ul.flags li::before{
+    content:"";position:absolute;left:4px;top:16px;width:10px;height:10px;
+    border-radius:2px;background:currentColor;opacity:.75;
+  }
+  li.flag-scam::before{background:var(--danger)}
+  li.flag-safe::before{background:var(--safe)}
+  li.flag-suspicious::before{background:var(--warn)}
+
+  .advice{
+    margin-top:18px;padding:14px 16px;border-radius:10px;
+    background:#F9FAFB;border:1px solid var(--line);font-size:.95rem;
+  }
+  .advice strong{display:block;margin-bottom:4px}
+
+  .disclaimer{
+    margin-top:26px;font-size:.82rem;color:var(--muted);text-align:center;
+  }
+  footer{margin-top:56px;border-top:1px solid var(--line);padding-top:18px;
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;
+    font-size:.85rem;color:var(--muted)}
+  a{color:var(--ink)}
+
+  @media (max-width:520px){
+    .wrap{padding:32px 16px}
+    .stamp{top:auto;bottom:14px;right:14px}
+    .card{padding:24px 20px 64px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="shield">🛡</span> Scam&nbsp;Shield</div>
+    <h1>Paste it. Know if it's a <em>scam</em> — before you tap.</h1>
+    <p class="sub">Suspicious text? Weird "delivery fee" link? Too-good job offer? Drop the whole message here and get a straight verdict in seconds.</p>
+  </header>
+
+  <main>
+    <label for="msg">The message you're not sure about</label>
+    <textarea id="msg" placeholder="Paste the full message here — including any links, phone numbers, or 'urgent' demands…"></textarea>
+
+    <div class="row">
+      <button class="analyze" id="go">Check this message</button>
+      <button class="clear" id="clear">Clear</button>
+    </div>
+    <p class="status" id="status" role="status"></p>
+
+    <section id="result" aria-live="polite">
+      <div class="card">
+        <div class="stamp" id="stamp">—</div>
+        <div class="meter">
+          <div class="meter-bar"><div class="meter-fill" id="fill"></div></div>
+          <div class="meter-label"><span>Risk level</span><span id="pct">—</span></div>
+        </div>
+        <h2 class="reason">Why</h2>
+        <ul class="flags" id="flags"></ul>
+        <div class="advice" id="advice"></div>
+      </div>
+      <p class="disclaimer">Automated analysis — not legal or security advice. When money or identity is at stake, verify with the company directly.</p>
+    </section>
+  </main>
+
+  <footer>
+    <span>Scam Shield · free & instant</span>
+    <a href="plaindocs.html">Plain-English Docs →</a>
+  </footer>
+</div>
+
+<script src="config.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const btn = $("go"), ta = $("msg"), status = $("status");
+
+btn.addEventListener("click", async () => {
+  const text = ta.value.trim();
+  if (text.length < 10){ status.textContent = "Paste the full message first — a few words won't tell us much."; return; }
+
+  btn.disabled = true; $("result").style.display = "none";
+  status.textContent = "Analyzing…";
+
+  try{
+    const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method:"POST",
+      headers:{ "Authorization":"Bearer "+window.SHIELD_KEY, "Content-Type":"application/json" },
+      body: JSON.stringify({
+        model:"groq/compound-mini",
+        messages:[
+          {role:"system", content:
+`You are Scam Shield, a fraud-detection engine. Analyze the user's pasted message for scams, phishing, fraud, or social engineering.
+Reply ONLY with minified JSON matching exactly:
+{"verdict":"scam|suspicious|safe","risk":<int 0-100>,"reason":"one plain sentence","flags":[{"type":"scam|suspicious|safe","text":"short flag description"}],"advice":"one concrete next step"}
+Rules: verdict 'scam' only for clear fraud patterns; 'suspicious' for mixed signals; risk is 0 (definitely safe) to 100 (definite scam). Flags: 2-5 short items citing specifics from the message (links, urgency, payment asks). Plain language a non-expert understands.`},
+          {role:"user", content:text}
+        ],
+        response_format:{type:"json_object"},
+        max_tokens:600
+      })
+    });
+    if(!r.ok) throw new Error("API "+r.status);
+    let data = JSON.parse(r.json().choices[0].message.content);
+
+    // Render
+    $("result").style.display = "block";
+    status.textContent = "";
+    const v = (data.verdict||"suspicious").toLowerCase();
+    const stamp = $("stamp");
+    stamp.textContent = v==="scam"?"SCAM":v==="safe"?"SAFE":"SUSPICIOUS";
+    stamp.className = "stamp "+v;
+    const fill = $("fill");
+    fill.className = "meter-fill "+v;
+    requestAnimationFrame(()=> setTimeout(()=> fill.style.width = Math.min(Math.max(data.risk??50,0),100)+"%", 60));
+    $("pct").textContent = "Risk score: "+(data.risk??"—")+"/100";
+    $("flags").innerHTML = (Array.isArray(data.flags)?data.flags:[])
+      .map(f=>`<li class="flag-${(f.type||'suspicious').toLowerCase()}">${f.text}</li>`).join("")
+      || `<li class="flag-${v}">${data.reason||""}</li>`;
+    $("advice").innerHTML = "<strong>What to do now</strong>"+(data.advice||"");
+    $("result").scrollIntoView({behavior:"smooth", block:"nearest"});
+  }catch(e){
+    status.textContent = "Couldn't analyze right now ("+e.message+"). Try again in a moment.";
+  }finally{
+    btn.disabled = false;
+  }
+});
+
+$("clear").addEventListener("click", ()=>{ ta.value=""; status.textContent=""; $("result").style.display="none"; });
+</script>
+</body>
+</html>
