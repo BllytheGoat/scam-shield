@@ -110,9 +110,25 @@
   // ---- Universal chat call ----
   async function chat(systemPrompt, userText, opts={}){
     const c = getConfig();
-    const p = PRESETS[c.provider] || PRESETS.custom;
     const maxTok = opts.max_tokens || 900;
 
+    // Path 1: serverless proxy (key hidden server-side) — used when user has no custom key
+    if(c.demo || !c.provider){
+      const r = await fetch("/api/chat", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ system: systemPrompt, user: userText, max_tokens: maxTok })
+      });
+      if(!r.ok){
+        let msg = "Proxy "+r.status;
+        try{ msg = (await r.json()).error || msg; }catch(e){}
+        throw new Error(msg);
+      }
+      return JSON.parse((await r.json()).content);
+    }
+
+    // Path 2: BYO key — call provider directly from the browser
+    const p = PRESETS[c.provider] || PRESETS.custom;
     if(p.kind === "anthropic"){
       const r = await fetch(c.url + "/messages", {
         method:"POST",
@@ -133,7 +149,6 @@
       return JSON.parse(j.content[0].text);
     }
 
-    // OpenAI-compatible (Groq, OpenAI, Gemini-compat, custom)
     const r = await fetch(c.url + "/chat/completions", {
       method:"POST",
       headers:{ "Authorization":"Bearer "+c.key, "Content-Type":"application/json" },
