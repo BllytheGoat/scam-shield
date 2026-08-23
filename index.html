@@ -186,17 +186,10 @@
 </div>
 
 <script src="config.js"></script>
+<script src="ai-engine.js"></script>
 <script>
 const $ = id => document.getElementById(id);
-function getKey(){
-  let k = (window.SHIELD_KEY||"").trim();
-  if(k.includes("{{") || k.length < 20) k = localStorage.getItem("shield_groq") || "";
-  if(!k){
-    const entered = prompt("Demo mode: paste a free Groq API key (console.groq.com) to power the AI check. It stays in your browser only.");
-    if(entered){ localStorage.setItem("shield_groq", entered.trim()); k = entered.trim(); }
-  }
-  return k;
-}
+/* key logic -> ai-engine.js */
 const btn = $("go"), ta = $("msg"), status = $("status");
 
 btn.addEventListener("click", async () => {
@@ -207,25 +200,10 @@ btn.addEventListener("click", async () => {
   status.textContent = "Analyzing…";
 
   try{
-    const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method:"POST",
-      headers:{ "Authorization":"Bearer "+getKey(), "Content-Type":"application/json" },
-      body: JSON.stringify({
-        model:"groq/compound-mini",
-        messages:[
-          {role:"system", content:
-`You are Scam Shield, a fraud-detection engine. Analyze the user's pasted message for scams, phishing, fraud, or social engineering.
+    let data = await AIEngine.chat(`You are Scam Shield, a fraud-detection engine. Analyze the user's pasted message for scams, phishing, fraud, or social engineering.
 Reply ONLY with minified JSON matching exactly:
 {"verdict":"scam|suspicious|safe","risk":<int 0-100>,"reason":"one plain sentence","flags":[{"type":"scam|suspicious|safe","text":"short flag description"}],"advice":"one concrete next step"}
-Rules: verdict 'scam' only for clear fraud patterns; 'suspicious' for mixed signals; risk is 0 (definitely safe) to 100 (definite scam). Flags: 2-5 short items citing specifics from the message (links, urgency, payment asks). Plain language a non-expert understands.`},
-          {role:"user", content:text}
-        ],
-        response_format:{type:"json_object"},
-        max_tokens:600
-      })
-    });
-    if(!r.ok) throw new Error("API "+r.status);
-    let data = JSON.parse(r.json().choices[0].message.content);
+Rules: verdict 'scam' only for clear fraud patterns; 'suspicious' for mixed signals; risk is 0 (definitely safe) to 100 (definite scam). Flags: 2-5 short items citing specifics from the message (links, urgency, payment asks). Plain language a non-expert understands.`, text, {max_tokens:600});
 
     // Render
     $("result").style.display = "block";
