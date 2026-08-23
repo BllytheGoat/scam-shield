@@ -188,6 +188,15 @@
 <script src="config.js"></script>
 <script>
 const $ = id => document.getElementById(id);
+function getKey(){
+  let k = (window.SHIELD_KEY||"").trim();
+  if(k.includes("{{") || k.length < 20) k = localStorage.getItem("shield_groq") || "";
+  if(!k){
+    const entered = prompt("Demo mode: paste a free Groq API key (console.groq.com) to power the AI check. It stays in your browser only.");
+    if(entered){ localStorage.setItem("shield_groq", entered.trim()); k = entered.trim(); }
+  }
+  return k;
+}
 const btn = $("go"), ta = $("msg"), status = $("status");
 
 btn.addEventListener("click", async () => {
@@ -200,7 +209,7 @@ btn.addEventListener("click", async () => {
   try{
     const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method:"POST",
-      headers:{ "Authorization":"Bearer "+window.SHIELD_KEY, "Content-Type":"application/json" },
+      headers:{ "Authorization":"Bearer "+getKey(), "Content-Type":"application/json" },
       body: JSON.stringify({
         model:"groq/compound-mini",
         messages:[
