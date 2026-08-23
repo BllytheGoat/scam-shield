@@ -161,6 +161,7 @@
     <div class="row">
       <button class="analyze" id="go">Check this message</button>
       <button class="clear" id="clear">Clear</button>
+      <button class="clear" id="settings" type="button">⚙ AI key</button>
     </div>
     <p class="status" id="status" role="status"></p>
 
@@ -199,6 +200,7 @@ btn.addEventListener("click", async () => {
   btn.disabled = true; $("result").style.display = "none";
   status.textContent = "Analyzing…";
 
+  if(!AIEngine.isConfigured()){ AIEngine.settingsUI(); return; }
   try{
     let data = await AIEngine.chat(`You are Scam Shield, a fraud-detection engine. Analyze the user's pasted message for scams, phishing, fraud, or social engineering.
 Reply ONLY with minified JSON matching exactly:
@@ -227,6 +229,8 @@ Rules: verdict 'scam' only for clear fraud patterns; 'suspicious' for mixed sign
     btn.disabled = false;
   }
 });
+
+$("settings").addEventListener("click", ()=> AIEngine.settingsUI());
 
 $("clear").addEventListener("click", ()=>{ ta.value=""; status.textContent=""; $("result").style.display="none"; });
 </script>
